@@ -245,4 +245,4 @@ class Main:
             except Exception as error:self.method.sendMessage(self.myGuid,str(error));console.log(error)
         
 if __name__ == "__main__":
-    bot = Main("Auth","Guid",Server().shad()).bot()
+    bot = Main("oefsvkxswwxdaxlaiewhhqletldlgbcs","u09Rtz05d8b8e6d2df147f5f2f31bf10",Server().shad()).bot()

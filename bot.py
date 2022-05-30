@@ -1,4 +1,5 @@
 from io import BufferedReader
+from os import remove
 import urllib3,random,base64,datetime,math,wget
 from os.path import dirname,abspath,join
 from Crypto.Cipher import AES
@@ -11,7 +12,6 @@ from rich.traceback import install
 console = Console()
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 install()
-wget.download
 
 class Encryption:
     def __init__(self, auth) -> int:
@@ -50,16 +50,31 @@ class Encryption:
         result = unpad(dec, AES.block_size).decode('UTF-8')
         return result
     
+class Server:
+    def rubika(self):
+        return {
+            "link":"https://messengerg2c13.iranlms.ir",
+            "package": "web.rubika.ir"
+        }
+        
+    def shad(self):
+        return {
+            "link":"https://shadmessenger15.iranlms.ir/",
+            "package": "web.shad.ir"
+        }   
+    
 class Methods:
     
-    def __init__(self,auth):
+    def __init__(self,auth,server:Server):
         self.auth = auth
         self.enc = Encryption(self.auth)
+        self.server = server
         
     def request(self,data:dict) -> dict:
         while True:
-            try: 
-                response = post("https://shadmessenger15.iranlms.ir/",json=data).json()
+            try:
+
+                response = post(self.server["link"],json=data).json()
                 return loads(self.enc.decrypt(response["data_enc"]))
             except Exception as error:
                 ...
@@ -72,7 +87,7 @@ class Methods:
                 "app_name": "Main",
                 "app_version": "3.2.2",
                 "platform": "Web",
-                "package": "web.shad.ir",
+                "package": self.server["package"],
                 "lang_code": "fa"
             }
         }
@@ -175,11 +190,12 @@ class Methods:
         
 class Main:
     
-    def __init__(self,auth:str,guid:str) -> None:
+    def __init__(self,auth:str,guid:str,server:dict) -> None:
         self.path = dirname(abspath(__file__))
         self.myGuid = guid
-        self.method = Methods(auth)
+        self.method = Methods(auth,server)
         self.answered = [] 
+        self.server = server
         
     def decrypt(self):
         ...   
@@ -187,21 +203,20 @@ class Main:
     def upload(self,directory,object_guid):
         try:
             with open(directory,"rb+") as file:
-                self.method.sendMessage(self.myGuid,"Downloading...")
-                self.method.sendFile(file.name,object_guid,str(file.name).split("/")[1],len(file.read()),str(file.name).split(".")[-1],str(file.name).split("/")[1])
-        except Exception as error:self.method.sendMessage(self.myGuid,str(error)) 
+                self.method.sendFile(file.name,object_guid,str(file.name).split("\\")[-1],len(file.read()),str(file.name).split(".")[-1],str(file.name).split("\\")[-1])
+        except Exception as error:self.method.sendMessage(self.myGuid,str(error));console.log(error)
         
     def download(self,link:str) -> None:
         try:
-            wget.download(link,join(self.path,"Files",link.split('/')[-1]))
-            return f"Files/{link.split('/')[-1]}"
-        except Exception as error:self.method.sendMessage(self.myGuid,str(error)) 
+            self.method.sendMessage(self.myGuid,"Downloading...")
+            return wget.download(link,join(self.path,"Files",link.split('/')[-1]))
+        except Exception as error:self.method.sendMessage(self.myGuid,str(error));console.log(error)
         
     def handlerLink(self) -> bool:
         try:
             update = self.method.getChatsUpdates()
             for msg in update:
-                if msg["last_message"]["type"] == "Text" and not msg["last_message"]['message_id'] in self.answered and (str(msg['last_message']['text']).startswith("http://") or str(msg['last_message']['text']).startswith("https://")):
+                if msg['abs_object']['object_guid'] == self.myGuid and msg["last_message"]["type"] == "Text" and not msg["last_message"]['message_id'] in self.answered and (str(msg['last_message']['text']).startswith("http://") or str(msg['last_message']['text']).startswith("https://")):
                     return {
                         "status": True,
                         "link": str(msg['last_message']['text'])
@@ -209,10 +224,12 @@ class Main:
                             
                 self.answered.append(msg["last_message"]["message_id"])        
                         
-        except Exception as error:self.method.sendMessage(self.myGuid,str(error));self.answered.append(msg["last_message"]["message_id"]) 
+        except Exception as error:self.method.sendMessage(self.myGuid,str(error));self.answered.append(msg["last_message"]["message_id"]);console.log(error)
         
     def debuging(self):
-        self.download("http://webika.org/video/Untitled-1.mp4")
+        self.handlerLink()
+        location = self.download(self.handlerLink()["link"])
+        ...
         
     def bot(self):
         while True:
@@ -220,11 +237,12 @@ class Main:
                 linkBool = self.handlerLink()
                 if linkBool == None:
                     continue
-                if linkBool["status"]:
+                elif linkBool["status"]:
                     location = self.download(linkBool["link"])
                     self.upload(location,self.myGuid)
                     self.method.sendMessage(self.myGuid,"Download successfully ✅")
-            except Exception as error:self.method.sendMessage(self.myGuid,str(error))
+                    remove(location)
+            except Exception as error:self.method.sendMessage(self.myGuid,str(error));console.log(error)
         
 if __name__ == "__main__":
-    bot = Main("Auth","myGuid").bot()
+    bot = Main("Auth","Guid",Server().shad()).bot()
